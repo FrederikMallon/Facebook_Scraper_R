@@ -32,15 +32,17 @@ scrape_facebook_likes <- function(seiten_liste) {
   cat("Starte Abfrage für", nrow(seiten_liste), "Seiten...\n")
   
   ergebnisse <- seiten_liste %>%
+    rowwise() %>%
     mutate(
-      Likes = sapply(Target.ID, function(id) {
-        cat("Frage Seite ab:", id, "\n")
-        likes <- get_page_likes(id)
+      Likes = {
+        cat("Frage Seite ab:", Target.ID, "\n")
+        likes <- get_page_likes(Target.ID)
         Sys.sleep(1)
-        return(likes)
-      }),
-      Datum = Sys.Date()
-    )
+        as.numeric(likes)
+      },
+      Datum = as.character(Sys.Date())
+    ) %>%
+    ungroup()
   
   cat("\nAbfrage abgeschlossen!\n")
   return(ergebnisse)
@@ -53,9 +55,13 @@ meine_seiten <- read.csv(csv_path, stringsAsFactors = FALSE)
 # Abrufen
 ergebnis <- scrape_facebook_likes(meine_seiten)
 
-# Kompakte Ansicht
+# Kompakte Ansicht - sicherstellen dass alle Spalten atomare Werte haben
 ergebnis_kompakt <- ergebnis %>%
-  select(Seitenname, Likes, Datum)
+  select(Seitenname, Likes, Datum) %>%
+  mutate(
+    Likes = as.numeric(Likes),
+    Datum = as.character(Datum)
+  )
 
 print(ergebnis_kompakt)
 
