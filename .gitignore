@@ -1,0 +1,16 @@
+# R
+.Rhistory
+.RData
+.Rproj.user
+*.Rproj
+
+# System
+.DS_Store
+Thumbs.db
+
+# Credentials (falls du später Secrets verwendest)
+.env
+credentials.json
+
+# Aber results Ordner tracken
+!results/.gitkeep
