@@ -20,29 +20,38 @@ jobs:
           r-version: '4.3.2'
           use-public-rspm: true
       
-      - name: Query dependencies
-        run: |
-          install.packages('remotes')
-          saveRDS(remotes::dev_package_deps(dependencies = TRUE), ".github/depends.Rds", version = 2)
-          writeLines(sprintf("R-%i.%i", getRversion()$major, getRversion()$minor), ".github/R-version")
-        shell: Rscript {0}
-
       - name: Cache R packages
         uses: actions/cache@v3
         with:
           path: ${{ env.R_LIBS_USER }}
-          key: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-${{ hashFiles('.github/depends.Rds') }}
-          restore-keys: ${{ runner.os }}-${{ hashFiles('.github/R-version') }}-1-
+          key: ${{ runner.os }}-r-4.3.2-pkgs-v2
+          restore-keys: ${{ runner.os }}-r-4.3.2-
       
       - name: Install System Dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev libfribidi-dev
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libcurl4-openssl-dev \
+            libssl-dev \
+            libxml2-dev \
+            libfontconfig1-dev \
+            libharfbuzz-dev \
+            libfribidi-dev
       
       - name: Install R Packages
         run: |
-          if (!requireNamespace("pak", quietly = TRUE)) install.packages("pak")
-          pak::pak(c("favstats/metatargetr", "tidyverse", "lubridate", "scales"))
+          options(repos = c(RSPM = "https://packagemanager.posit.co/cran/__linux__/noble/latest"))
+          
+          # Prüfe ob Pakete bereits installiert sind
+          required_pkgs <- c("tidyverse", "lubridate", "scales", "remotes")
+          
+          new_pkgs <- required_pkgs[!(required_pkgs %in% installed.packages()[,"Package"])]
+          if(length(new_pkgs)) install.packages(new_pkgs)
+          
+          # metatargetr von GitHub
+          if(!"metatargetr" %in% installed.packages()[,"Package"]) {
+            remotes::install_github("favstats/metatargetr")
+          }
         shell: Rscript {0}
       
       - name: Run Scraper
