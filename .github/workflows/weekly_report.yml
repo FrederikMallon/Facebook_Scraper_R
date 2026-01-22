@@ -1,0 +1,64 @@
+name: Wöchentlicher Report per E-Mail
+
+on:
+  schedule:
+    # Läuft jeden Montag um 10:00 UTC (2 Stunden nach dem Scraper)
+    - cron: '0 10 * * 1'
+  workflow_dispatch: # Ermöglicht manuelles Auslösen
+
+jobs:
+  analyse-and-email:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Alle History laden für Zugriff auf alle results
+      
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: '4.3.2'
+          use-public-rspm: true
+      
+      - name: Cache R packages
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.R_LIBS_USER }}
+          key: ${{ runner.os }}-r-4.3.2-pkgs-v2
+          restore-keys: ${{ runner.os }}-r-4.3.2-
+      
+      - name: Install R Packages
+        run: |
+          options(repos = c(RSPM = "https://packagemanager.posit.co/cran/__linux__/noble/latest"))
+          
+          required_pkgs <- c("tidyverse", "lubridate")
+          new_pkgs <- required_pkgs[!(required_pkgs %in% installed.packages()[,"Package"])]
+          if(length(new_pkgs)) install.packages(new_pkgs)
+        shell: Rscript {0}
+      
+      - name: Run Analysis
+        run: Rscript analyse_veraenderungen.R
+      
+      - name: Send Email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: 📊 Wöchentlicher Facebook Likes Report - ${{ github.run_number }}
+          to: ${{ secrets.EMAIL_TO }}
+          from: Facebook Scraper <${{ secrets.EMAIL_USERNAME }}>
+          html_body: file://reports/weekly_report.html
+          priority: normal
+      
+      - name: Commit Reports
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add reports/
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Add weekly report - $(date +'%Y-%m-%d')" && git push)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
