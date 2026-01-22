@@ -1,15 +1,10 @@
 # Facebook Follower Scraper
 # Liest Seiten-IDs aus CSV und scraped Likes
 
-# Pakete installieren falls nötig
-if (!require("pak")) install.packages("pak")
-
-pak::pak(c(
-  "favstats/metatargetr",
-  "tidyverse",
-  "lubridate",
-  "scales"
-))
+# Pakete laden (Installation erfolgt via GitHub Actions)
+if (!requireNamespace("metatargetr", quietly = TRUE)) {
+  stop("Pakete nicht installiert. Bitte zuerst installieren.")
+}
 
 library(metatargetr)
 library(tidyverse)
