@@ -39,6 +39,8 @@ jobs:
             libfribidi-dev
       
       - name: Install R Packages
+        env:
+          GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
         run: |
           options(repos = c(RSPM = "https://packagemanager.posit.co/cran/__linux__/noble/latest"))
           
@@ -48,9 +50,9 @@ jobs:
           new_pkgs <- required_pkgs[!(required_pkgs %in% installed.packages()[,"Package"])]
           if(length(new_pkgs)) install.packages(new_pkgs)
           
-          # metatargetr von GitHub
+          # metatargetr von GitHub mit Token
           if(!"metatargetr" %in% installed.packages()[,"Package"]) {
-            remotes::install_github("favstats/metatargetr")
+            remotes::install_github("favstats/metatargetr", auth_token = Sys.getenv("GITHUB_PAT"))
           }
         shell: Rscript {0}
       
