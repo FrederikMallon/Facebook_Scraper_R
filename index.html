@@ -88,6 +88,13 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
         
+        .input-group small {
+            display: block;
+            margin-top: 5px;
+            color: #6c757d;
+            font-size: 12px;
+        }
+        
         .btn {
             padding: 12px 24px;
             border: none;
@@ -98,13 +105,18 @@
             transition: all 0.3s;
         }
         
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
         .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             width: 100%;
         }
         
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
         }
@@ -115,7 +127,7 @@
             margin-right: 10px;
         }
         
-        .btn-secondary:hover {
+        .btn-secondary:hover:not(:disabled) {
             background: #5a6268;
         }
         
@@ -128,6 +140,15 @@
         
         .btn-danger:hover {
             background: #c82333;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover:not(:disabled) {
+            background: #218838;
         }
         
         .btn-github {
@@ -221,6 +242,9 @@
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
         .alert-info {
@@ -234,6 +258,90 @@
             border: 1px solid #c3e6cb;
             color: #155724;
         }
+        
+        .alert-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .github-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .github-status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .github-status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.show {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .modal-content h3 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -244,46 +352,66 @@
         </div>
         
         <div class="content">
-            <div class="alert alert-info">
-                ℹ️ <strong>Hinweis:</strong> Lade deine CSV von GitHub, bearbeite sie hier, und lade sie dann wieder herunter um sie in GitHub zu ersetzen.
-            </div>
-            
-            <div class="stats">
-                <div class="stat-card">
-                    <div class="number" id="totalCount">0</div>
-                    <div class="label">Seiten</div>
-                </div>
-            </div>
-            
             <div class="form-section">
-                <h2>➕ Neue Seite hinzufügen</h2>
+                <h2>🔗 GitHub Verbindung</h2>
+                <div id="githubStatus"></div>
                 <div class="input-group">
-                    <label for="seitenname">Seitenname</label>
-                    <input type="text" id="seitenname" placeholder="z.B. AfD Kreisverband Dresden">
+                    <label for="githubToken">GitHub Personal Access Token</label>
+                    <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+                    <small>Erstelle einen Token unter: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic) → Generate new token. Benötigte Berechtigung: <strong>repo</strong></small>
                 </div>
-                <div class="input-group">
-                    <label for="targetid">Target ID (Facebook Page ID)</label>
-                    <input type="text" id="targetid" placeholder="z.B. 123456789012345">
-                </div>
-                <button class="btn btn-primary" onclick="addEntry()">Seite hinzufügen</button>
+                <button class="btn btn-primary" onclick="connectGitHub()">Verbinden</button>
             </div>
             
-            <div class="form-section">
-                <h2>📋 Aktuelle Seiten</h2>
-                <div class="table-container" id="tableContainer">
-                    <div class="empty-state">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                        <p>Noch keine Seiten vorhanden. Füge deine erste Seite hinzu oder lade eine CSV!</p>
+            <div id="mainContent" style="display: none;">
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="number" id="totalCount">0</div>
+                        <div class="label">Seiten</div>
                     </div>
                 </div>
+                
+                <div class="form-section">
+                    <h2>➕ Neue Seite hinzufügen</h2>
+                    <div class="input-group">
+                        <label for="seitenname">Seitenname</label>
+                        <input type="text" id="seitenname" placeholder="z.B. AfD Kreisverband Dresden">
+                    </div>
+                    <div class="input-group">
+                        <label for="targetid">Target ID (Facebook Page ID)</label>
+                        <input type="text" id="targetid" placeholder="z.B. 123456789012345">
+                    </div>
+                    <button class="btn btn-primary" onclick="addEntry()">Seite hinzufügen</button>
+                </div>
+                
+                <div class="form-section">
+                    <h2>📋 Aktuelle Seiten</h2>
+                    <div class="table-container" id="tableContainer">
+                        <div class="empty-state">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <p>Noch keine Seiten vorhanden. Füge deine erste Seite hinzu!</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="actions">
+                    <button class="btn btn-success" onclick="saveToGitHub()" id="saveBtn">💾 Direkt in GitHub speichern</button>
+                    <button class="btn btn-secondary" onclick="loadFromFile()">📂 Lokale CSV laden</button>
+                    <button class="btn btn-secondary" onclick="downloadCSV()">⬇️ CSV herunterladen</button>
+                </div>
             </div>
-            
-            <div class="actions">
-                <button class="btn btn-secondary" onclick="loadFromFile()">📂 CSV laden</button>
-                <button class="btn btn-secondary" onclick="downloadCSV()">💾 CSV herunterladen</button>
-                <button class="btn btn-github" onclick="window.open('https://github.com/FrederikMallon/Facebook_Scraper_R', '_blank')">🔗 Zum GitHub Repo</button>
+        </div>
+    </div>
+    
+    <div id="confirmModal" class="modal">
+        <div class="modal-content">
+            <h3>⚠️ Bestätigung</h3>
+            <p>Möchtest du die CSV wirklich in GitHub überschreiben? Diese Aktion kann nicht rückgängig gemacht werden.</p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Abbrechen</button>
+                <button class="btn btn-success" onclick="confirmSave()">Ja, speichern</button>
             </div>
         </div>
     </div>
@@ -292,6 +420,155 @@
     
     <script>
         let entries = [];
+        let githubToken = '';
+        let fileSha = '';
+        const REPO_OWNER = 'FrederikMallon';
+        const REPO_NAME = 'Facebook_Scraper_R';
+        const FILE_PATH = 'data/seiten_liste.csv';
+        
+        // Token aus localStorage laden
+        window.addEventListener('load', () => {
+            const savedToken = localStorage.getItem('github_token');
+            if (savedToken) {
+                document.getElementById('githubToken').value = savedToken;
+                connectGitHub();
+            }
+        });
+        
+        async function connectGitHub() {
+            const token = document.getElementById('githubToken').value.trim();
+            
+            if (!token) {
+                showAlert('Bitte gib einen GitHub Token ein!', 'danger');
+                return;
+            }
+            
+            githubToken = token;
+            localStorage.setItem('github_token', token);
+            
+            showAlert('Verbinde mit GitHub...', 'info');
+            
+            try {
+                const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+                    headers: {
+                        'Authorization': `token ${githubToken}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Verbindung fehlgeschlagen. Prüfe deinen Token!');
+                }
+                
+                const data = await response.json();
+                fileSha = data.sha;
+                
+                // CSV von GitHub laden
+                const content = atob(data.content);
+                parseCSV(content);
+                
+                updateGitHubStatus(true);
+                document.getElementById('mainContent').style.display = 'block';
+                showAlert('✅ Erfolgreich mit GitHub verbunden und CSV geladen!', 'success');
+                
+            } catch (error) {
+                updateGitHubStatus(false);
+                showAlert('❌ ' + error.message, 'danger');
+                localStorage.removeItem('github_token');
+            }
+        }
+        
+        function updateGitHubStatus(connected) {
+            const statusDiv = document.getElementById('githubStatus');
+            if (connected) {
+                statusDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        <span class="github-status connected">● Verbunden</span>
+                        <span>Repository: ${REPO_OWNER}/${REPO_NAME}</span>
+                    </div>
+                `;
+            } else {
+                statusDiv.innerHTML = `
+                    <div class="alert alert-warning">
+                        <span class="github-status disconnected">● Nicht verbunden</span>
+                    </div>
+                `;
+            }
+        }
+        
+        function showAlert(message, type) {
+            const existing = document.querySelector('.alert-temp');
+            if (existing) existing.remove();
+            
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} alert-temp`;
+            alert.textContent = message;
+            
+            document.querySelector('.content').insertBefore(alert, document.querySelector('.content').firstChild);
+            
+            if (type === 'success') {
+                setTimeout(() => alert.remove(), 5000);
+            }
+        }
+        
+        async function saveToGitHub() {
+            document.getElementById('confirmModal').classList.add('show');
+        }
+        
+        function closeModal() {
+            document.getElementById('confirmModal').classList.remove('show');
+        }
+        
+        async function confirmSave() {
+            closeModal();
+            
+            if (entries.length === 0) {
+                showAlert('Keine Einträge zum Speichern!', 'warning');
+                return;
+            }
+            
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="loading"></span> Speichere...';
+            
+            try {
+                let csv = 'Seitenname,Target.ID\n';
+                entries.forEach(entry => {
+                    csv += `${entry.seitenname},${entry.targetid}\n`;
+                });
+                
+                const content = btoa(unescape(encodeURIComponent(csv)));
+                
+                const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `token ${githubToken}`,
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: `Update seiten_liste.csv via Web Editor - ${new Date().toISOString()}`,
+                        content: content,
+                        sha: fileSha
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Fehler beim Speichern!');
+                }
+                
+                const data = await response.json();
+                fileSha = data.content.sha;
+                
+                showAlert('✅ Erfolgreich in GitHub gespeichert!', 'success');
+                
+            } catch (error) {
+                showAlert('❌ Fehler: ' + error.message, 'danger');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '💾 Direkt in GitHub speichern';
+            }
+        }
         
         function updateStats() {
             document.getElementById('totalCount').textContent = entries.length;
@@ -306,7 +583,7 @@
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>
-                        <p>Noch keine Seiten vorhanden. Füge deine erste Seite hinzu oder lade eine CSV!</p>
+                        <p>Noch keine Seiten vorhanden. Füge deine erste Seite hinzu!</p>
                     </div>
                 `;
                 return;
@@ -352,12 +629,12 @@
             const targetid = document.getElementById('targetid').value.trim();
             
             if (!seitenname || !targetid) {
-                alert('Bitte fülle beide Felder aus!');
+                showAlert('Bitte fülle beide Felder aus!', 'warning');
                 return;
             }
             
             if (!/^\d+$/.test(targetid)) {
-                alert('Target ID muss nur Zahlen enthalten!');
+                showAlert('Target ID muss nur Zahlen enthalten!', 'warning');
                 return;
             }
             
@@ -367,18 +644,20 @@
             document.getElementById('targetid').value = '';
             
             renderTable();
+            showAlert('✅ Seite hinzugefügt!', 'success');
         }
         
         function deleteEntry(index) {
             if (confirm('Möchtest du diese Seite wirklich löschen?')) {
                 entries.splice(index, 1);
                 renderTable();
+                showAlert('✅ Seite gelöscht!', 'success');
             }
         }
         
         function downloadCSV() {
             if (entries.length === 0) {
-                alert('Keine Einträge zum Herunterladen!');
+                showAlert('Keine Einträge zum Herunterladen!', 'warning');
                 return;
             }
             
@@ -398,6 +677,8 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            
+            showAlert('✅ CSV heruntergeladen!', 'success');
         }
         
         function loadFromFile() {
@@ -412,6 +693,7 @@
             reader.onload = function(e) {
                 const text = e.target.result;
                 parseCSV(text);
+                showAlert(`✅ ${entries.length} Seiten aus Datei geladen!`, 'success');
             };
             reader.readAsText(file);
         }
@@ -420,7 +702,7 @@
             const lines = text.split('\n').filter(line => line.trim());
             
             if (lines.length < 2) {
-                alert('CSV-Datei ist leer oder ungültig!');
+                showAlert('CSV-Datei ist leer oder ungültig!', 'danger');
                 return;
             }
             
@@ -437,7 +719,6 @@
             }
             
             renderTable();
-            alert(`${entries.length} Seiten erfolgreich geladen!`);
         }
         
         renderTable();
