@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook Seiten CSV Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .form-section h2 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 100%;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            margin-right: 10px;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-github {
+            background: #24292e;
+            color: white;
+        }
+        
+        .btn-github:hover {
+            background: #1a1f23;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+        
+        th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card .label {
+            font-size: 13px;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Facebook Seiten Manager</h1>
+            <p>Verwalte deine Facebook-Seiten für den Scraper</p>
+        </div>
+        
+        <div class="content">
+            <div class="alert alert-info">
+                ℹ️ <strong>Hinweis:</strong> Lade deine CSV von GitHub, bearbeite sie hier, und lade sie dann wieder herunter um sie in GitHub zu ersetzen.
+            </div>
+            
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="number" id="totalCount">0</div>
+                    <div class="label">Seiten</div>
+                </div>
+            </div>
+            
+            <div class="form-section">
+                <h2>➕ Neue Seite hinzufügen</h2>
+                <div class="input-group">
+                    <label for="seitenname">Seitenname</label>
+                    <input type="text" id="seitenname" placeholder="z.B. AfD Kreisverband Dresden">
+                </div>
+                <div class="input-group">
+                    <label for="targetid">Target ID (Facebook Page ID)</label>
+                    <input type="text" id="targetid" placeholder="z.B. 123456789012345">
+                </div>
+                <button class="btn btn-primary" onclick="addEntry()">Seite hinzufügen</button>
+            </div>
+            
+            <div class="form-section">
+                <h2>📋 Aktuelle Seiten</h2>
+                <div class="table-container" id="tableContainer">
+                    <div class="empty-state">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p>Noch keine Seiten vorhanden. Füge deine erste Seite hinzu oder lade eine CSV!</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="actions">
+                <button class="btn btn-secondary" onclick="loadFromFile()">📂 CSV laden</button>
+                <button class="btn btn-secondary" onclick="downloadCSV()">💾 CSV herunterladen</button>
+                <button class="btn btn-github" onclick="window.open('https://github.com/FrederikMallon/Facebook_Scraper_R', '_blank')">🔗 Zum GitHub Repo</button>
+            </div>
+        </div>
+    </div>
+    
+    <input type="file" id="fileInput" accept=".csv" style="display: none;" onchange="handleFileSelect(event)">
+    
+    <script>
+        let entries = [];
+        
+        function updateStats() {
+            document.getElementById('totalCount').textContent = entries.length;
+        }
+        
+        function renderTable() {
+            const container = document.getElementById('tableContainer');
+            
+            if (entries.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <p>Noch keine Seiten vorhanden. Füge deine erste Seite hinzu oder lade eine CSV!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Seitenname</th>
+                            <th>Target ID</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            entries.forEach((entry, index) => {
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${entry.seitenname}</td>
+                        <td>${entry.targetid}</td>
+                        <td>
+                            <button class="btn btn-danger" onclick="deleteEntry(${index})">🗑️ Löschen</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = html;
+            updateStats();
+        }
+        
+        function addEntry() {
+            const seitenname = document.getElementById('seitenname').value.trim();
+            const targetid = document.getElementById('targetid').value.trim();
+            
+            if (!seitenname || !targetid) {
+                alert('Bitte fülle beide Felder aus!');
+                return;
+            }
+            
+            if (!/^\d+$/.test(targetid)) {
+                alert('Target ID muss nur Zahlen enthalten!');
+                return;
+            }
+            
+            entries.push({ seitenname, targetid });
+            
+            document.getElementById('seitenname').value = '';
+            document.getElementById('targetid').value = '';
+            
+            renderTable();
+        }
+        
+        function deleteEntry(index) {
+            if (confirm('Möchtest du diese Seite wirklich löschen?')) {
+                entries.splice(index, 1);
+                renderTable();
+            }
+        }
+        
+        function downloadCSV() {
+            if (entries.length === 0) {
+                alert('Keine Einträge zum Herunterladen!');
+                return;
+            }
+            
+            let csv = 'Seitenname,Target.ID\n';
+            entries.forEach(entry => {
+                csv += `${entry.seitenname},${entry.targetid}\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'seiten_liste.csv');
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        function loadFromFile() {
+            document.getElementById('fileInput').click();
+        }
+        
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                parseCSV(text);
+            };
+            reader.readAsText(file);
+        }
+        
+        function parseCSV(text) {
+            const lines = text.split('\n').filter(line => line.trim());
+            
+            if (lines.length < 2) {
+                alert('CSV-Datei ist leer oder ungültig!');
+                return;
+            }
+            
+            entries = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const parts = lines[i].split(',');
+                if (parts.length >= 2) {
+                    entries.push({
+                        seitenname: parts[0].trim(),
+                        targetid: parts[1].trim()
+                    });
+                }
+            }
+            
+            renderTable();
+            alert(`${entries.length} Seiten erfolgreich geladen!`);
+        }
+        
+        renderTable();
+    </script>
+</body>
+</html>
