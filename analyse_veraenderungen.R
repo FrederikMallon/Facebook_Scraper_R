@@ -10,12 +10,27 @@ find_latest_files <- function(results_dir = "results") {
     stop("Nicht genügend Dateien für Vergleich vorhanden!")
   }
   
-  # Nach Datum sortieren (neueste zuerst)
-  files_sorted <- files[order(file.info(files)$mtime, decreasing = TRUE)]
+  # Extrahiere Timestamp aus Dateinamen und sortiere
+  # Format: facebook_likes_YYYYMMDD_HHMMSS.csv
+  file_data <- data.frame(
+    path = files,
+    filename = basename(files),
+    stringsAsFactors = FALSE
+  )
+  
+  # Timestamp aus Dateinamen extrahieren
+  file_data$timestamp <- gsub("facebook_likes_(\\d+_\\d+)\\.csv", "\\1", file_data$filename)
+  
+  # Nach Timestamp sortieren (neueste zuerst)
+  file_data <- file_data[order(file_data$timestamp, decreasing = TRUE), ]
+  
+  cat("Gefundene Dateien (sortiert nach Datum):\n")
+  print(file_data[, c("filename", "timestamp")])
+  cat("\n")
   
   return(list(
-    aktuell = files_sorted[1],
-    vorherig = files_sorted[2]
+    aktuell = file_data$path[1],
+    vorherig = file_data$path[2]
   ))
 }
 
