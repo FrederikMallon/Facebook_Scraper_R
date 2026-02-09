@@ -13,13 +13,24 @@ library(scales)
 
 # Funktion zum Auslesen der Likes für eine einzelne Seite
 get_page_likes <- function(page_id) {
+  # Wenn page_id NA ist, direkt NA zurückgeben
+  if (is.na(page_id)) {
+    return(NA_real_)
+  }
+  
   tryCatch({
     page_info <- get_page_insights(page_id, include_info = "page_info")
     likes <- as.numeric(page_info$likes)
+    
+    # Falls likes leer oder NULL ist, NA zurückgeben
+    if (length(likes) == 0 || is.null(likes)) {
+      return(NA_real_)
+    }
+    
     return(likes)
   }, error = function(e) {
     warning(paste("Fehler bei Seite", page_id, ":", e$message))
-    return(NA)
+    return(NA_real_)
   })
 }
 
@@ -35,10 +46,15 @@ scrape_facebook_likes <- function(seiten_liste) {
     rowwise() %>%
     mutate(
       Likes = {
-        cat("Frage Seite ab:", Target.ID, "\n")
-        likes <- get_page_likes(Target.ID)
+        # Target.ID als String behandeln
+        id_string <- as.character(Target.ID)
+        cat("Frage Seite ab:", id_string, "\n")
+        
+        likes_result <- get_page_likes(id_string)
         Sys.sleep(1)
-        as.numeric(likes)
+        
+        # Sicherstellen dass immer ein einzelner numerischer Wert zurückgegeben wird
+        if (length(likes_result) == 0) NA_real_ else as.numeric(likes_result)[1]
       },
       Datum = as.character(Sys.Date())
     ) %>%
@@ -50,7 +66,11 @@ scrape_facebook_likes <- function(seiten_liste) {
 
 # Liste aus CSV-Datei einlesen (von GitHub Repository)
 csv_path <- "data/seiten_liste.csv"
-meine_seiten <- read.csv(csv_path, stringsAsFactors = FALSE)
+meine_seiten <- read.csv(csv_path, stringsAsFactors = FALSE, sep = ";")
+
+# Debug: Spaltennamen ausgeben
+cat("Gefundene Spalten:", paste(names(meine_seiten), collapse = ", "), "\n")
+cat("Anzahl Zeilen:", nrow(meine_seiten), "\n")
 
 # Abrufen
 ergebnis <- scrape_facebook_likes(meine_seiten)
